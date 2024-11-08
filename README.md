@@ -4,8 +4,9 @@
 a library to serve as a generic cover for most log related libraries.
 create your custom log entries within your log folder and manage
 the behaviour from your customized log function.
+                                       
 store to a database. use a client to send it over the wire, or between microservices.
-                                            
+ 
 by default an entry follows the elastic common schema and its most common fields.
 Expand from there. use LogActions to design your service along your imagination,
 just pass the entry and the desired action to your registered service and done.
@@ -13,7 +14,7 @@ just pass the entry and the desired action to your registered service and done.
 its actually just a log preset collection with a if else block to determine which
 option you have selected.
 the options need to be written by yourself.
-                                            
+ 
 gains:
 - manage your logs from a centralized location. ideally a custom folder.
 = structure your logs deterministically. there should be no random strings passed around.
@@ -21,10 +22,14 @@ gains:
 - maintain your logs from within the glorious monolith, dont venture to vault 11 and roll down the steep learning curve you came from.
                                             
                                             
-### Action
+
+                                            
+### Usability
+                                            
+##### Action
 ```swift
 // Example Action
-public struct ClientAction: LogAction {
+public struct ClientAction: LogKitAction {
     public enum Base: String, Sendable {
         case clientAuthenticated
         case clientDeAuthenticated
@@ -45,29 +50,28 @@ public struct ClientAction: LogAction {
 
 
 
-### Service
+##### Service
 ```swift
 // Example Service
-public struct ClientLogService: LogServiceable {
-    public let id: LogIdentifier = LogIdentifier(string: "ecs")
+public struct ClientLogService: LogKitServiceable {
+    public typealias Entry = ClientEntry
+    public typealias Action = ClientAction
+    
+    public let id: LogKitIdentifier = LogKitIdentifier(string: "ecs")
     
     public var handler: LogHandler
-    
-    public var action: ClientAction
     
     
     //
     public init(
-        _ handler: LogHandler,
-        action: ClientAction
+        _ handler: LogHandler
     ) {
         self.handler = handler
-        self.action = action
     }
     
     
     //
-    public func prepareMetadata(_ metadata: Logger.Metadata? = nil) -> Logger.Metadata {
+    public func evalMetadata(_ metadata: Logger.Metadata? = nil) -> Logger.Metadata {
         var _combinedMetadata = self.handler.metadata
         
         if let metadata = metadata {
@@ -81,38 +85,39 @@ public struct ClientLogService: LogServiceable {
     
     
     //
-    public func log<Entry>(
-        action: ClientAction,
-        entry: Entry
-    ) async throws where Entry: LogEntry {
+    public func log(
+        _ action: ClientAction,
+        entry: ClientEntry
+    ) async throws {
+        var _entry = entry
+        _entry.metadata = evalMetadata(entry.metadata)
         
-        var _entry: LogEntry = entry
-        _entry.metadata = prepareMetadata(entry.metadata)
+        if action == .clientAuthenticated { }
+        
+        if action == .clientDeAuthenticated { }
         
         let entry = _entry
-        if action == .clientAuthenticated {
-            try await entry.log() }
-        
-        if action == .clientDeAuthenticated {
-            
-        }
-        
-        throw LogError.invalidEntry("clientEntry")
+        try await entry.log()
+    
+        throw LogKitError.invalidEntry("clientEntry")
     }
 }
 ```
 
 
-### Entry
+##### Entry
 ```swift
 // Example Entry
-public struct ClientEntry: LogEntry {
+//
+public struct ClientEntry: LogKitEntry {
     
     public var level: Logger.Level?
     
     public var tags: [String]?
     
     public var labels: [String : String]?
+    
+    public var version: String?
     
     public var metadata: Logger.Metadata?
     
@@ -155,7 +160,15 @@ public struct ClientEntry: LogEntry {
         case file = "log.file"
         case function = "log.function"
         case line = "log.line"
+        case address = "log.address"
+        case ip = "log.ip"
+        case port = "log.port"
+        case bytes = "log.bytes"
+        case domain = "log.domain"
+        case mac = "log.mac"
+        case packets = "log.packets"
     }
+    
     
     public init(
         level: Logger.Level? = nil,
@@ -180,6 +193,7 @@ public struct ClientEntry: LogEntry {
         self.level = level
         self.tags = tags
         self.labels = labels
+        self.version = version
         self.metadata = metadata
         self.timestamp = timestamp
         self.message = message
@@ -198,8 +212,7 @@ public struct ClientEntry: LogEntry {
     
     
     public func log() async throws {
-        // do custom stuff here
+        // DO CUSTOM STUFF HERE
     }
 }
-
 ```

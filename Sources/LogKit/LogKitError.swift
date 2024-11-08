@@ -1,7 +1,6 @@
 import Foundation
 
 
-/// Log error type
 public struct LogKitError: Error, Sendable {
     public struct ErrorType: Sendable, Hashable, CustomStringConvertible {
         

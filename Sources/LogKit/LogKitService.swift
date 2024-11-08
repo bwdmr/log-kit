@@ -4,18 +4,16 @@ import Logging
 
 
 
-// LogService
 public actor LogService: Sendable {
-  
-    private var storage: [LogKitIdentifier: LogKitServiceable]
-
+    private var storage: [LogKitIdentifier: any LogKitServiceable]
+    
     public init() {
         self.storage = [:]
     }
-  
-  
+    
+    
     @discardableResult
-    public func register(_ service: LogKitServiceable)
+    public func register(_ service: any LogKitServiceable)
     async throws -> Self {
         
         let id = await service.id
@@ -28,24 +26,26 @@ public actor LogService: Sendable {
 }
 
 
-//
+
 public protocol LogKitServiceable: Sendable {
+    associatedtype Action: LogKitAction
+    associatedtype Entry: LogKitEntry
     
     var id: LogKitIdentifier { get }
     
     var handler: LogHandler { get }
     
-    func log(
-        action: any LogKitAction,
-        entry: LogKitEntry
-    ) async throws
+    func log(_ action: Action, entry: Entry) async throws
+    
+    func log(_ entry: some DataProtocol, as _: Entry.Type) async throws
 }
 
 
-// Decode from JSON to <Entry>
+
+
 extension LogKitServiceable {
-    public func log<Entry>(_ entry: some DataProtocol)
-    async throws -> Entry where Entry: LogKitEntry {
+    public func log<Entry>(_ entry: some DataProtocol, as _: Entry.Type = Entry.self)
+    async throws where Entry: LogKitEntry {
         let jsonDecoder: JSONDecoder = .defaultForLog
         
         var _logentry: Entry
@@ -59,12 +59,11 @@ extension LogKitServiceable {
         }
         
         try await _logentry.log()
-        return _logentry
     }
 }
 
 
-// Encode from URLQueryItems to Data
+
 extension LogKitServiceable {
     public func queryitemBuffer(_ items: [URLQueryItem]) throws -> [UInt8] {
         let bodyString = try items.map({
@@ -76,5 +75,66 @@ extension LogKitServiceable {
         
         let bodyData = Array(bodyString.utf8)
         return bodyData
+    }
+}
+
+
+
+extension Logger.MetadataValue: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case type
+        case value
+    }
+    
+    private enum ValueType: String, Codable {
+        case string
+        case stringConvertible
+        case dictionary
+        case array
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        switch self {
+        case .string(let stringValue):
+            try container.encode(ValueType.string, forKey: .type)
+            try container.encode(stringValue, forKey: .value)
+            
+        case .stringConvertible(let customValue):
+            try container.encode(ValueType.stringConvertible, forKey: .type)
+            try container.encode(customValue.description, forKey: .value) // Encode description
+            
+        case .dictionary(let dictValue):
+            try container.encode(ValueType.dictionary, forKey: .type)
+            try container.encode(dictValue, forKey: .value)
+            
+        case .array(let arrayValue):
+            try container.encode(ValueType.array, forKey: .type)
+            try container.encode(arrayValue, forKey: .value)
+        }
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(ValueType.self, forKey: .type)
+        
+        switch type {
+        case .string:
+            let stringValue = try container.decode(String.self, forKey: .value)
+            self = .string(stringValue)
+            
+        case .stringConvertible:
+            let stringValue = try container.decode(String.self, forKey: .value)
+            self = .stringConvertible(stringValue) // Store as `stringConvertible` using `String` type
+            
+        case .dictionary:
+            let dictValue = try container.decode(Logger.Metadata.self, forKey: .value)
+            self = .dictionary(dictValue)
+            
+        case .array:
+            let arrayValue = try container.decode([Logger.MetadataValue].self, forKey: .value)
+            self = .array(arrayValue)
+        }
     }
 }
