@@ -3,6 +3,7 @@
 
 import PackageDescription
 
+
 let package = Package(
     name: "LogKit",
     platforms: [
@@ -16,10 +17,9 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log.git", branch: "main")
     ],
     targets: [
-      .target(name: "LogKit",
-              dependencies: [
-                  .product(name: "Logging", package: "swift-log")
-              ]),
+      .target(
+        name: "LogKit",
+        dependencies: [ .product(name: "Logging", package: "swift-log") ]),
       .testTarget(
           name: "LogKitTests",
           dependencies: [ .target(name: "LogKit"), ]

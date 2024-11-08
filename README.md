@@ -1,218 +1,134 @@
-# log-kit
+# LogKit
 
+LogKit is a Swift logging framework that provides a flexible, protocol-based approach to logging with support for multiple logging services, custom log entries, and structured metadata.
 
-a library to serve as a generic cover for most log related libraries.
-create your custom log entries within your log folder and manage
-the behaviour from your customized log function.
-                                       
-store to a database. use a client to send it over the wire, or between microservices.
- 
-by default an entry follows the elastic common schema and its most common fields.
-Expand from there. use LogActions to design your service along your imagination,
-just pass the entry and the desired action to your registered service and done.
-                                            
-its actually just a log preset collection with a if else block to determine which
-option you have selected.
-the options need to be written by yourself.
- 
-gains:
-- manage your logs from a centralized location. ideally a custom folder.
-= structure your logs deterministically. there should be no random strings passed around.
-= log on top of serverless architecture by independence from access to the underlying system.
-- maintain your logs from within the glorious monolith, dont venture to vault 11 and roll down the steep learning curve you came from.
-                                            
-                                            
+## Features
 
-                                            
-### Usability
-                                            
-##### Action
+- 🔄 Asynchronous logging with Swift concurrency support
+- 🎯 Protocol-based design for extensibility
+- 🏷 Support for structured logging with metadata, tags, and labels
+- 🔌 Multiple logging service support through a unified interface
+- 🛡 Type-safe logging actions
+- 💪 Written in Swift with full Sendable compliance for thread safety
+
+## Installation
+
+[Add installation instructions based on your package manager]
+
+## Core Components
+
+### LogService
+
+The central coordinator that manages multiple logging services:
+
 ```swift
-// Example Action
-public struct ClientAction: LogKitAction {
-    public enum Base: String, Sendable {
-        case clientAuthenticated
-        case clientDeAuthenticated
-    }
+let logService = LogService()
+await logService.register(myCustomLogger)
+```
+
+### LogKitServiceable
+
+The main protocol for implementing logging services:
+
+```swift
+public protocol LogKitServiceable: Sendable {
+    associatedtype Action: LogKitAction
+    associatedtype Entry: LogKitEntry
     
-    public let base: Base
+    var id: LogKitIdentifier { get }
+    var handler: LogHandler { get }
     
-    public init(_ base: Base) { self.base = base }
-    
-    public static let clientAuthenticated: ClientAction = .init(.clientAuthenticated)
-    public static let clientDeAuthenticated: ClientAction = .init(.clientDeAuthenticated)
-    
-    public var description: String {
-        base.rawValue
-    }
+    func log(_ action: Action, entry: Entry) async throws
+    func log(_ entry: some DataProtocol, as _: Entry.Type) async throws
 }
 ```
 
+### LogKitEntry
 
+Protocol for defining log entries with structured data:
 
-##### Service
 ```swift
-// Example Service
-public struct ClientLogService: LogKitServiceable {
-    public typealias Entry = ClientEntry
-    public typealias Action = ClientAction
+public protocol LogKitEntry: Codable, Sendable {
+    var level: Logger.Level? { get set }
+    var tags: [String]? { get set }
+    var labels: [String: String]? { get set }
+    var metadata: Logger.Metadata? { get set }
+    var timestamp: Date? { get set }
+    var message: String? { get set }
+    var source: String? { get set }
+    var file: String? { get set }
+    var function: String? { get set }
+    var line: UInt? { get set }
     
-    public let id: LogKitIdentifier = LogKitIdentifier(string: "ecs")
-    
-    public var handler: LogHandler
-    
-    
-    //
-    public init(
-        _ handler: LogHandler
-    ) {
-        self.handler = handler
-    }
-    
-    
-    //
-    public func evalMetadata(_ metadata: Logger.Metadata? = nil) -> Logger.Metadata {
-        var _combinedMetadata = self.handler.metadata
-        
-        if let metadata = metadata {
-            _combinedMetadata.merge(metadata) { (_, new) in new }
-        }
-        
-        let combinedMetadata = _combinedMetadata
-        
-        return combinedMetadata
-    }
-    
-    
-    //
-    public func log(
-        _ action: ClientAction,
-        entry: ClientEntry
-    ) async throws {
-        var _entry = entry
-        _entry.metadata = evalMetadata(entry.metadata)
-        
-        if action == .clientAuthenticated { }
-        
-        if action == .clientDeAuthenticated { }
-        
-        let entry = _entry
-        try await entry.log()
-    
-        throw LogKitError.invalidEntry("clientEntry")
-    }
+    func log() async throws
 }
 ```
 
+## Error Handling
 
-##### Entry
+LogKit provides a comprehensive error handling system through `LogKitError`:
+
+- `generic`: General purpose errors
+- `invalidData`: Data formatting or parsing errors
+- `invalidEntry`: Log entry validation errors
+- `invalidService`: Service configuration errors
+- `missingService`: Service availability errors
+
+## Example Usage
+
 ```swift
-// Example Entry
-//
-public struct ClientEntry: LogKitEntry {
+// Define a custom log entry
+struct MyLogEntry: LogKitEntry {
+    var level: Logger.Level?
+    var tags: [String]?
+    var labels: [String: String]?
+    var metadata: Logger.Metadata?
+    var timestamp: Date?
+    var message: String?
+    var source: String?
+    var file: String?
+    var function: String?
+    var line: UInt?
     
-    public var level: Logger.Level?
-    
-    public var tags: [String]?
-    
-    public var labels: [String : String]?
-    
-    public var version: String?
-    
-    public var metadata: Logger.Metadata?
-    
-    public var timestamp: Date?
-    
-    public var message: String?
-    
-    public var source: String?
-    
-    public var file: String?
-    
-    public var function: String?
-    
-    public var line: UInt?
-    
-    public let address: String?
-    
-    public let ip: String?
-    
-    public let port: Int?
-    
-    public let bytes: Int?
-    
-    public let domain: String?
-    
-    public let mac: String?
-    
-    public let packets: Int?
-    
-    
-    enum CodingKeys: String, CodingKey {
-        case level = "log.level"
-        case tags = "log.tags"
-        case labels = "log.labels"
-        case version = "log.version"
-        case metadata = "log.metadata"
-        case timestamp = "@timestamp"
-        case message = "log.message"
-        case source = "log.source"
-        case file = "log.file"
-        case function = "log.function"
-        case line = "log.line"
-        case address = "log.address"
-        case ip = "log.ip"
-        case port = "log.port"
-        case bytes = "log.bytes"
-        case domain = "log.domain"
-        case mac = "log.mac"
-        case packets = "log.packets"
-    }
-    
-    
-    public init(
-        level: Logger.Level? = nil,
-        tags: [String]? = nil,
-        labels: [String : String]? = nil,
-        version: String? = nil,
-        metadata: Logger.Metadata? = nil,
-        timestamp: Date? = nil,
-        message: String? = nil,
-        source: String? = nil,
-        file: String? = nil,
-        function: String? = nil,
-        line: UInt? = nil,
-        address: String? = nil,
-        ip: String? = nil,
-        port: Int? = nil,
-        bytes: Int? = nil,
-        domain: String? = nil,
-        mac: String? = nil,
-        packets: Int? = nil
-    ) {
-        self.level = level
-        self.tags = tags
-        self.labels = labels
-        self.version = version
-        self.metadata = metadata
-        self.timestamp = timestamp
-        self.message = message
-        self.source = source
-        self.file = file
-        self.function = function
-        self.line = line
-        self.address = address
-        self.ip = ip
-        self.port = port
-        self.bytes = bytes
-        self.domain = domain
-        self.mac = mac
-        self.packets = packets
-    }
-    
-    
-    public func log() async throws {
-        // DO CUSTOM STUFF HERE
+    func log() async throws {
+        // Implement logging logic
     }
 }
+
+// Define a custom logging action
+struct MyLogAction: LogKitAction {
+    let base: String
+    
+    var description: String { base }
+}
+
+// Create and register a logging service
+class MyLogService: LogKitServiceable {
+    let id: LogKitIdentifier = "my-logger"
+    let handler: LogHandler
+    
+    func log(_ action: MyLogAction, entry: MyLogEntry) async throws {
+        // Implement logging logic
+    }
+}
+
+// Use the logging service
+let service = LogService()
+let logger = MyLogService()
+try await service.register(logger)
 ```
+
+## Best Practices
+
+1. **Structured Logging**: Use tags, labels, and metadata to organize your logs
+2. **Error Handling**: Always handle logging errors appropriately
+3. **Async/Await**: Take advantage of Swift's concurrency system for non-blocking logging
+4. **Type Safety**: Use custom `LogKitAction` types to ensure type-safe logging operations
+
+## Contributing
+
+[Add contribution guidelines]
+
+## License
+
+[Add license information]
