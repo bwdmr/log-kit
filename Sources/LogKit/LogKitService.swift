@@ -34,6 +34,10 @@ public protocol LogKitServiceable: Sendable {
     var id: LogKitIdentifier { get }
     
     var handler: LogHandler { get }
+  
+    var labels: [String: String]? { get set }
+  
+    var metadata: Logger.Metadata? { get set }
     
     func log(_ action: Action, entry: Entry) async throws
     

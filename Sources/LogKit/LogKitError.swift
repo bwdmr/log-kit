@@ -92,6 +92,7 @@ public struct LogKitError: Error, Sendable {
     }
 }
 
+
 extension LogKitError: CustomStringConvertible {
     public var description: String {
         var result = #"LogKitError(errorType: \#(self.errorType)"#

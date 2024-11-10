@@ -37,6 +37,8 @@ public protocol LogKitServiceable: Sendable {
     
     var id: LogKitIdentifier { get }
     var handler: LogHandler { get }
+    var labels: [String: String] { get set}
+    var metadata: Logger.Metadata { get set }
     
     func log(_ action: Action, entry: Entry) async throws
     func log(_ entry: some DataProtocol, as _: Entry.Type) async throws
@@ -49,10 +51,7 @@ Protocol for defining log entries with structured data:
 
 ```swift
 public protocol LogKitEntry: Codable, Sendable {
-    var level: Logger.Level? { get set }
     var tags: [String]? { get set }
-    var labels: [String: String]? { get set }
-    var metadata: Logger.Metadata? { get set }
     var timestamp: Date? { get set }
     var message: String? { get set }
     var source: String? { get set }
@@ -79,10 +78,7 @@ LogKit provides a comprehensive error handling system through `LogKitError`:
 ```swift
 // Define a custom log entry
 struct MyLogEntry: LogKitEntry {
-    var level: Logger.Level?
     var tags: [String]?
-    var labels: [String: String]?
-    var metadata: Logger.Metadata?
     var timestamp: Date?
     var message: String?
     var source: String?
