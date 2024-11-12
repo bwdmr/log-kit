@@ -87,8 +87,8 @@ public struct LogKitError: Error, Sendable {
     }
     
     ///
-    public static func missingService(_ name: String) -> Self {
-        .init(backing: .init(errorType: .missingService, name: name))
+    public static func missingService() -> Self {
+        .init(backing: .init(errorType: .missingService, name: "Service missing.", reason: "Service has not been registered."))
     }
 }
 
