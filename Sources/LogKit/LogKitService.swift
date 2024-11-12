@@ -11,12 +11,17 @@ public actor LogService: Sendable {
         self.storage = [:]
     }
     
+    public subscript(id: LogKitIdentifier) -> (any LogKitServiceable)? {
+        get {
+            return storage[id]
+        }
+    }
     
     @discardableResult
     public func register(_ service: any LogKitServiceable)
-    async throws -> Self {
+    throws -> Self {
         
-        let id = await service.id
+        let id = service.id
         if self.storage[id] != nil {
             print("Warning: Overwriting existing OAuth configuration for service identifier; '\(id)'.") }
         self.storage[id] = service
@@ -24,12 +29,22 @@ public actor LogService: Sendable {
         return self
     }
     
+    //public func log<Service>(_ service: Service, action: Service.Action, entry: Service.Entry)
+    //async throws where Service: LogKitServiceable {
+    //    try await service.log(action, entry: entry)
+    //}
     
-    public subscript(id: LogKitIdentifier) -> (any LogKitServiceable)? {
-        get {
-            return storage[id]
-        }
+    /*
+    public func log<Action, Entry>(id: LogKitIdentifier, action: Action, entry: Entry)
+    async throws where Action: LogKitAction, Entry: LogKitEntry {
+        guard let service = self[id],
+              service.Type,
+              Action.Type == service.action.Type
+        else { throw LogKitError.missingService() }
+        
+        service.log(<#T##action: (any LogKitServiceable).Action##(any LogKitServiceable).Action#>, entry: <#T##(any LogKitServiceable).Entry#>)
     }
+     */
 }
 
 
