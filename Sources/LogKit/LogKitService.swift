@@ -29,22 +29,11 @@ public actor LogService: Sendable {
         return self
     }
     
-    //public func log<Service>(_ service: Service, action: Service.Action, entry: Service.Entry)
-    //async throws where Service: LogKitServiceable {
-    //    try await service.log(action, entry: entry)
-    //}
     
-    /*
-    public func log<Action, Entry>(id: LogKitIdentifier, action: Action, entry: Entry)
-    async throws where Action: LogKitAction, Entry: LogKitEntry {
-        guard let service = self[id],
-              service.Type,
-              Action.Type == service.action.Type
-        else { throw LogKitError.missingService() }
-        
-        service.log(<#T##action: (any LogKitServiceable).Action##(any LogKitServiceable).Action#>, entry: <#T##(any LogKitServiceable).Entry#>)
+    public func log<Service>(_ service: Service, action: Service.Action, entry: Service.Entry)
+    async throws where Service: LogKitServiceable {
+        try await service.log(action, entry: entry)
     }
-     */
 }
 
 
