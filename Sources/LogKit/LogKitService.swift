@@ -37,18 +37,15 @@ public actor LogService: Sendable {
 }
 
 
-
-public protocol LogKitServiceable: Sendable {
+public protocol LogKitServiceable: Sendable, LogHandler {
     associatedtype Action: LogKitAction
     associatedtype Entry: LogKitEntry
     
     var id: LogKitIdentifier { get }
     
-    var handler: LogHandler { get }
+    var logLevel: Logger.Level { get set }
     
-    var labels: [String: String]? { get set }
-    
-    var metadata: Logger.Metadata? { get set }
+    var metadata: Logger.Metadata { get set }
     
     func log(_ action: Action, entry: Entry) async throws
     

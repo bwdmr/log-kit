@@ -9,8 +9,6 @@ public protocol LogKitEntry: Codable, Sendable {
     
     var message: String? { get set }
     
-    var source: String? { get set }
-    
     var file: String? { get set }
     
     var function: String? { get set }
