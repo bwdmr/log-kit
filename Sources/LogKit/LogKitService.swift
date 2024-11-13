@@ -29,10 +29,9 @@ public actor LogService: Sendable {
         return self
     }
     
-    
-    public func log<Service>(_ service: Service, action: Service.Action, entry: Service.Entry)
-    async throws where Service: LogKitServiceable {
-        try await service.log(action, entry: entry)
+    public func log<Service>(_ service: Service, entry: Service.Entry)
+    where Service: LogKitServiceable {
+        service.log(entry)
     }
 }
 
@@ -45,13 +44,16 @@ public protocol LogKitServiceable: Sendable, LogHandler {
     
     var logLevel: Logger.Level { get set }
     
+    static var action: Action.Base { get }
+    
     var metadata: Logger.Metadata { get set }
     
-    func log(_ action: Action, entry: Entry) async throws
+    func log(_ entry: Entry)
     
-    func log(_ entry: some DataProtocol, as _: Entry.Type) async throws
+    func log(_ entry: some DataProtocol, as _: Entry.Type)
+    
+    func log(level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, source: String, file: String, function: String, line: UInt)
 }
-
 
 
 
@@ -65,7 +67,9 @@ extension LogKitServiceable {
             let encodedEntry = Array(entry)
             _logentry = try jsonDecoder.decode(
                 Entry.self, from: .init(encodedEntry.base64URLDecodedBytes()) )
-        } catch {
+        }
+        
+        catch {
             throw LogKitError.invalidEntry(
                 "Couldn't decode Entry with error: \(String(describing: error))")
         }

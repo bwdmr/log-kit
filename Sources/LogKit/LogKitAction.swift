@@ -1,8 +1,14 @@
 import Foundation
 
 
-public protocol LogKitAction: Equatable, Sendable {
-    associatedtype Base
+
+public protocol LogKitBase: Codable, Equatable, Sendable {
+    static var base: Self { get }
+}
+
+
+public protocol LogKitAction: Codable, Equatable, Sendable {
+    associatedtype Base: LogKitBase
     
     var base: Base { get }
     

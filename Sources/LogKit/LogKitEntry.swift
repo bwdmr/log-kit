@@ -2,7 +2,12 @@ import Foundation
 import Logging
 
 
+
 public protocol LogKitEntry: Codable, Sendable {
+    associatedtype Action = LogKitAction
+    
+    static var action: Action { get }
+    
     var tags: [String]? { get set }
     
     var timestamp: Date? { get set }
