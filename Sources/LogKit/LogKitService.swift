@@ -30,36 +30,37 @@ public actor LogService: Sendable {
     }
     
     public func log<Service>(_ service: Service, entry: Service.Entry)
-    where Service: LogKitServiceable {
-        service.log(entry)
+    throws where Service: LogKitServiceable {
+        try service.log(entry)
     }
 }
 
 
+
+public protocol LogKitBase: RawRepresentable, Codable, Equatable, Sendable {
+    var rawValue: String { get }
+}
+
+
 public protocol LogKitServiceable: Sendable, LogHandler {
-    associatedtype Action: LogKitAction
-    associatedtype Entry: LogKitEntry
-    
+    associatedtype Base: LogKitBase
+    associatedtype Entry: LogKitEntry where Entry.Base == Base
+
     var id: LogKitIdentifier { get }
     
     var logLevel: Logger.Level { get set }
     
-    static var action: Action.Base { get }
-    
     var metadata: Logger.Metadata { get set }
     
-    func log(_ entry: Entry)
+    func log(_ entry: Entry) throws
     
-    func log(_ entry: some DataProtocol, as _: Entry.Type)
-    
-    func log(level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, source: String, file: String, function: String, line: UInt)
+    func log(_ entry: some DataProtocol, as _: Entry.Type) throws
 }
-
 
 
 extension LogKitServiceable {
     public func log<Entry>(_ entry: some DataProtocol, as _: Entry.Type = Entry.self)
-    async throws where Entry: LogKitEntry {
+    throws where Entry: LogKitEntry {
         let jsonDecoder: JSONDecoder = .defaultForLog
         
         var _logentry: Entry
@@ -74,7 +75,7 @@ extension LogKitServiceable {
                 "Couldn't decode Entry with error: \(String(describing: error))")
         }
         
-        try await _logentry.log()
+       _logentry.log()
     }
 }
 

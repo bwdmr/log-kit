@@ -14,18 +14,18 @@ extension JSONEncoder: LogJSONEncoder {}
 
 
 public extension LogJSONEncoder where Self == JSONEncoder {
-  static var defaultForLog: JSONEncoder {
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .secondsSince1970
-    return encoder
-  }
+    static var defaultForLog: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .secondsSince1970
+        return encoder
+    }
 }
 
 
 public extension LogJSONDecoder where Self == JSONDecoder {
-  static var defaultForLog: JSONDecoder {
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .secondsSince1970
-    return decoder
-  }
+    static var defaultForLog: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+        return decoder
+    }
 }

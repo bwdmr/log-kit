@@ -2,11 +2,10 @@ import Foundation
 import Logging
 
 
-
 public protocol LogKitEntry: Codable, Sendable {
-    associatedtype Action = LogKitAction
+    associatedtype Base: LogKitBase
     
-    static var action: Action { get }
+    var action: Base { get set }
     
     var tags: [String]? { get set }
     
@@ -20,7 +19,5 @@ public protocol LogKitEntry: Codable, Sendable {
     
     var line: UInt? { get set }
     
-    
-    func log() async throws
+    func log()
 }
-

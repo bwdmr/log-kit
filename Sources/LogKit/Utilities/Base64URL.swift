@@ -4,20 +4,20 @@ extension String {
     func base64URLDecodedData() -> Data? {
         var base64URL = replacingOccurrences(of: "-", with: "+")
             .replacingOccurrences(of: "_", with: "/")
-
+        
         base64URL.append(contentsOf: "===".prefix((4 - (base64URL.count & 3)) & 3))
-
+        
         return Data(base64Encoded: base64URL)
     }
 }
 
 package extension DataProtocol {
     func base64URLDecodedBytes() -> [UInt8] {
-      [UInt8](Data([UInt8]()).base64URLUnescaped())
+        [UInt8](Data([UInt8]()).base64URLUnescaped())
     }
-
+    
     func base64URLEncodedBytes() -> [UInt8] {
-      [UInt8](Data([UInt8]()).base64EncodedData().base64URLEscaped())
+        [UInt8](Data([UInt8]()).base64EncodedData().base64URLEscaped())
     }
 }
 
@@ -41,7 +41,7 @@ private extension Data {
             self += Data(repeating: 0x3D, count: 4 - count % 4)
         }
     }
-
+    
     /// Converts base64 encoded data to a base64-url encoded data.
     ///
     /// https://tools.ietf.org/html/rfc4648#page-7
@@ -55,7 +55,7 @@ private extension Data {
         }
         self = split(separator: 0x3D).first ?? .init()
     }
-
+    
     /// Converts base64-url encoded data to a base64 encoded data.
     ///
     /// https://tools.ietf.org/html/rfc4648#page-7
@@ -64,7 +64,7 @@ private extension Data {
         data.base64URLUnescape()
         return data
     }
-
+    
     /// Converts base64 encoded data to a base64-url encoded data.
     ///
     /// https://tools.ietf.org/html/rfc4648#page-7
